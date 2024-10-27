@@ -91,6 +91,19 @@ def vertex_cover_2_approx(graph):
         print(f"Zapisano graf po etapie {step} do pliku: graph_step_{step}_1.png")
         graph.remove_edge(u, v)
 
+        for neighbor in range(graph.size):
+            if graph.matrix[u][neighbor] > 0:
+                graph.matrix[u][neighbor] = 0
+                graph.matrix[neighbor][u] = 0
+                graph.remove_edge(u, neighbor)
+                print(f"Usuwam krawędź incydentną: ({u+1}, {neighbor+1})")
+            if graph.matrix[v][neighbor] > 0:
+                graph.matrix[v][neighbor] = 0
+                graph.matrix[neighbor][v] = 0
+                graph.remove_edge(v, neighbor)
+                print(f"Usuwam krawędź incydentną: ({v+1}, {neighbor+1})")
+
+
         graph.draw_graph(f"graph_step_{step}_2", cover_nodes=cover, cover_edges=cover_edges)
         print(f"Zapisano graf po etapie {step} do pliku: graph_step_{step}_2.png")
         
