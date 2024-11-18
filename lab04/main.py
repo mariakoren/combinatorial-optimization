@@ -13,7 +13,7 @@ class Graph:
     def load_from_file(self, filename):
         try:
             with open(filename, 'r') as f:
-                lines = f.readlines() 
+                lines = f.readlines()
                 graph_type = lines[0].strip()
                 self.directed = True if graph_type == 'S' else False
                 self.graph = nx.DiGraph() if self.directed else nx.Graph()
@@ -30,69 +30,76 @@ class Graph:
 
 # Sprawdzanie nierówności trójkąta
 def verify_triangle_inequality(graph):
-    for u, v, data in graph.edges(data=True):
-        for w, _, data2 in graph.edges(data=True):
-            if u != w and v != w:  # Unikamy sprawdzania w tych samych krawędziach
-                if graph[u][w]['weight'] > data['weight'] + data2['weight']:
-                    return False
+    for u in graph.nodes():
+        for v in graph.nodes():
+            if u != v:
+                for w in graph.nodes():
+                    if u != w and v != w:
+                        if graph.has_edge(u, v) and graph.has_edge(v, w) and graph.has_edge(w, u):
+                            uv_weight = graph[u][v]['weight']
+                            vw_weight = graph[v][w]['weight']
+                            wu_weight = graph[w][u]['weight']
+                            if uv_weight + vw_weight <= wu_weight or uv_weight + wu_weight <= vw_weight or vw_weight + wu_weight <= uv_weight:
+                                return False
     return True
 
 
 # Algorytm Christofidesa
 def christofides(graph):
-    # Krok 1: Sprawdzenie nierówności trójkąta
+    print("Krok 1: Sprawdzenie nierówności trójkąta")
     if not verify_triangle_inequality(graph):
         print("Graf nie spełnia nierówności trójkąta!")
         return None
+    print("Nierówność trójkąta spełniona")
 
-    # Krok 2: Obliczanie minimalnego drzewa rozpinającego (MST)
+    print("Krok 2: Obliczanie minimalnego drzewa rozpinającego (MST)")
     mst = nx.minimum_spanning_tree(graph)
 
-    # Krok 3: Znalezienie wierzchołków o nieparzystym stopniu w MST
+    print("Krok 3: Znalezienie wierzchołków o nieparzystym stopniu w MST")
     odd_degree_nodes = [v for v, deg in mst.degree() if deg % 2 != 0]
 
-    # Krok 4: Minimalne parowanie dla wierzchołków o nieparzystym stopniu
-    # Zbuduj podgraf z wierzchołkami o nieparzystym stopniu
+    print("Krok 4: Minimalne skojarzenie dla wierzchołków o nieparzystym stopniu")
     subgraph = graph.subgraph(odd_degree_nodes)
-
-    # Użycie funkcji max_weight_matching (minimalne parowanie)
     matching = nx.max_weight_matching(subgraph, maxcardinality=True, weight='weight')
 
-    # Krok 5: Połączenie MST i parowania
-    # Dodanie krawędzi z parowania do MST
-    eulerian_graph = mst.copy()
+    print("Krok 5: Połączenie MST i parowania")
+    eulerian_graph = nx.MultiGraph(mst)
     for u, v in matching:
         eulerian_graph.add_edge(u, v, weight=subgraph[u][v]['weight'])
 
-    # Krok 6: Sprawdzanie, czy graf jest Eulera
+    print("Krok 6: Sprawdzanie, czy graf jest Eulera")
     if not nx.is_connected(eulerian_graph) or any(deg % 2 != 0 for v, deg in eulerian_graph.degree()):
         print("Graf nie jest Eulera!")
         return None
 
-    # Znalezienie cyklu Eulera
     eulerian_cycle = list(nx.eulerian_circuit(eulerian_graph))
-
-    # Zwracamy wynik - cykl Eulera jako listę krawędzi
-    return eulerian_cycle
+    return mst, odd_degree_nodes, matching, eulerian_cycle
 
 
-# Rysowanie grafu
-def draw_graph(graph, filename="graph"):
+
+def draw_graph(graph, mst=None, matching=None, odd_degree_nodes=None, filename="graph"):
     pos = nx.spring_layout(graph)
-    nx.draw(graph, pos, with_labels=True, node_color='lightblue', font_weight='bold')
+    node_colors = ['lavender' if node in odd_degree_nodes else 'lightblue' for node in graph.nodes()]
+    nx.draw(graph, pos, with_labels=True, node_color=node_colors, font_weight='bold', edge_color='gray')
+    if mst is not None:
+        nx.draw_networkx_edges(mst, pos, edge_color='purple', width=10)
+    if matching is not None:
+        matching_edges = list(matching)
+        nx.draw_networkx_edges(graph, pos, edgelist=matching_edges, edge_color='skyblue', width=2)
+    edge_labels = nx.get_edge_attributes(graph, 'weight')
+    nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels, font_size=10, font_color='black')
     plt.savefig(f"{filename}.png")
-    plt.show()
+    plt.close()
 
 
-# Przykład użycia
 graph = Graph(directed=False)
-graph.load_from_file("file.txt")  # Wczytaj graf z pliku
-
-# Wykonanie algorytmu Christofidesa
-eulerian_cycle = christofides(graph.graph)  # Zastosowanie algorytmu Christofidesa
+graph.load_from_file("file.txt")
+mst, odd_degree_nodes, matching, eulerian_cycle = christofides(graph.graph)
 
 if eulerian_cycle:
     print(f"Cykl Eulera: {eulerian_cycle}")
 
-# Rysowanie grafu
-draw_graph(graph.graph)
+
+
+
+draw_graph(graph.graph, mst=mst, matching=matching, odd_degree_nodes=odd_degree_nodes)
