@@ -346,44 +346,31 @@ adjMatrix = g.chineese_postman()
 
 
 def find_eulerian_cycle(graph):
-    def is_eulerian(graph):
-        for i in range(len(graph)):
-            degree = sum(graph[i]) 
-            if degree % 2 != 0:
-                return False
-        return True
+    # Tworzymy graf skierowany
+    G = nx.MultiGraph()  # MultiGraph obsługuje krawędzie wielokrotne
 
-    def hierholzer(graph):
-        stack = []
-        cycle = []
-        current_vertex = 0 
-        remaining_edges = [row[:] for row in graph]  
+    # Dodajemy krawędzie do grafu z uwzględnieniem liczby krawędzi
+    for i in range(len(graph)):
+        for j in range(i + 1, len(graph)):  # Unikamy dodawania tych samych krawędzi dwukrotnie
+            if graph[i][j] > 0:
+                for _ in range(graph[i][j]):  # Dodajemy wielokrotne krawędzie
+                    G.add_edge(i, j)
 
-        # Algorytm Hierholzera
-        stack.append(current_vertex)
-        while stack:
-            if sum(remaining_edges[current_vertex]) > 0:
-                stack.append(current_vertex)
-                for next_vertex in range(len(remaining_edges[current_vertex])):
-                    if remaining_edges[current_vertex][next_vertex] > 0:
-                        remaining_edges[current_vertex][next_vertex] -= 1
-                        remaining_edges[next_vertex][current_vertex] -= 1 
-                        current_vertex = next_vertex
-                        break
-            else:
-                cycle.append(current_vertex)
-                current_vertex = stack.pop()
-        return cycle
+    # Sprawdzamy, czy graf ma cykl Eulera
+    if nx.is_eulerian(G):
+        # Znajdujemy cykl Eulera
+        cycle = list(nx.eulerian_circuit(G))
+        # Zwiększamy o 1 numery wierzchołków w cyklu
 
-    if is_eulerian(graph):
-        cycle = hierholzer(graph)
         return cycle
     else:
         return None
 
 cycle = find_eulerian_cycle(adjMatrix)
 if cycle:
-    cycle_plus_one = [v + 1 for v in cycle]
-    print("Cykl Eulera:", cycle_plus_one)
+    for u, v in cycle:
+        print(f"({u+1}, {v+1})", end=" ")
+    print()
+    # print("Cykl Eulera:", cycle)
 else:
     print("Graf nie ma cyklu Eulera")
