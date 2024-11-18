@@ -1,6 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch
+from collections import defaultdict
 
 class Graph:
     def __init__(self, directed=False):
@@ -196,6 +197,16 @@ class Graph:
             print("Plik nie został znaleziony.")
         except ValueError as ve:
             print(f"Błąd w danych: {ve}")
+
+    def display_matrices(self):
+        print("Macierz sąsiedztwa:")
+        for row in self.adj_matrix:
+            print(row)
+        print("\nMacierz wag:")
+        for row in self.weights_matrix:
+            print(["; ".join(map(str, cell)) if cell else "[]" for cell in row])
+
+
     def perfect_matching(self):
         # Upewnij się, że liczba wierzchołków w pełnym grafie jest parzysta
         if self.num_vertices % 2 != 0:
@@ -286,32 +297,25 @@ class Graph:
         self.draw_graph("augmented_graph")
         print("Zapisano graf z dodatkowymi krawędziami do pliku augmented_graph.png")
 
-        if nx.is_eulerian(G_E):
-            # Znajdź cykl Eulera w grafie G_E
-            eulerian_cycle = list(nx.eulerian_circuit(G_E))
-            print("Cykl Eulera:", eulerian_cycle)
-            # Rysowanie cyklu Eulera
-            plt.clf()
-            pos = nx.spring_layout(G_E)
-            nx.draw(G_E, pos, with_labels=True, node_color='lightblue', font_weight='bold', node_size=2000)
-            edge_labels = nx.get_edge_attributes(G_E, 'weight')
-            nx.draw_networkx_edge_labels(G_E, pos, edge_labels=edge_labels)
-            # Zaznaczenie krawędzi w cyklu Eulera
-            cycle_edges = [(u, v) for u, v in eulerian_cycle]
-            nx.draw_networkx_edges(G_E, pos, edgelist=cycle_edges, edge_color='green', width=2.5)
-            plt.savefig("eulerian_cycle.png")
-            print("Cykl Eulera zapisano do pliku eulerian_cycle.png")
-        else:
-            print("Graf G_E nie jest eulerowski, cykl Eulera nie istnieje.")
-
-
-
-
-
-
-
-
-        
+        # self.display_matrices()
+        return self.adj_matrix
+        # if nx.is_eulerian(G_E):
+        #     # Znajdź cykl Eulera w grafie G_E
+        #     eulerian_cycle = list(nx.eulerian_circuit(G_E))
+        #     print("Cykl Eulera:", eulerian_cycle)
+        #     # Rysowanie cyklu Eulera
+        #     plt.clf()
+        #     pos = nx.spring_layout(G_E)
+        #     nx.draw(G_E, pos, with_labels=True, node_color='lightblue', font_weight='bold', node_size=2000)
+        #     edge_labels = nx.get_edge_attributes(G_E, 'weight')
+        #     nx.draw_networkx_edge_labels(G_E, pos, edge_labels=edge_labels)
+        #     # Zaznaczenie krawędzi w cyklu Eulera
+        #     cycle_edges = [(u, v) for u, v in eulerian_cycle]
+        #     nx.draw_networkx_edges(G_E, pos, edgelist=cycle_edges, edge_color='green', width=2.5)
+        #     plt.savefig("eulerian_cycle.png")
+        #     print("Cykl Eulera zapisano do pliku eulerian_cycle.png")
+        # else:
+        #     print("Graf G_E nie jest eulerowski, cykl Eulera nie istnieje.")
 
     def to_networkx(self):
         G = nx.Graph()
@@ -327,4 +331,59 @@ class Graph:
 g = Graph()
 g.load_from_file("file.txt")
 g.draw_graph("basegraph")
-g_full=g.chineese_postman()
+adjMatrix = g.chineese_postman()
+
+# G = nx.Graph()
+# for i in range(len(adjMatrix)):
+#     for j in range(i, len(adjMatrix)):
+#         for _ in range(adjMatrix[i][j]):
+#             G.add_edge(i, j)
+# if nx.is_eulerian(G):
+#     euler_cycle = list(nx.eulerian_circuit(G))
+#     print(euler_cycle)
+# else:
+#     print("Graf nie ma cyklu Eulera")
+
+
+def find_eulerian_cycle(graph):
+    def is_eulerian(graph):
+        for i in range(len(graph)):
+            degree = sum(graph[i]) 
+            if degree % 2 != 0:
+                return False
+        return True
+
+    def hierholzer(graph):
+        stack = []
+        cycle = []
+        current_vertex = 0 
+        remaining_edges = [row[:] for row in graph]  
+
+        # Algorytm Hierholzera
+        stack.append(current_vertex)
+        while stack:
+            if sum(remaining_edges[current_vertex]) > 0:
+                stack.append(current_vertex)
+                for next_vertex in range(len(remaining_edges[current_vertex])):
+                    if remaining_edges[current_vertex][next_vertex] > 0:
+                        remaining_edges[current_vertex][next_vertex] -= 1
+                        remaining_edges[next_vertex][current_vertex] -= 1 
+                        current_vertex = next_vertex
+                        break
+            else:
+                cycle.append(current_vertex)
+                current_vertex = stack.pop()
+        return cycle
+
+    if is_eulerian(graph):
+        cycle = hierholzer(graph)
+        return cycle
+    else:
+        return None
+
+cycle = find_eulerian_cycle(adjMatrix)
+if cycle:
+    cycle_plus_one = [v + 1 for v in cycle]
+    print("Cykl Eulera:", cycle_plus_one)
+else:
+    print("Graf nie ma cyklu Eulera")
