@@ -6,15 +6,15 @@ from collections import defaultdict
 class Graph:
     def __init__(self, directed=False):
         self.directed = directed
-        self.adj_matrix = []  # Macierz sąsiedztwa
-        self.weights_matrix = []  # Macierz wag krawędzi
+        self.adj_matrix = [] 
+        self.weights_matrix = []  
         self.num_vertices = 0
 
     def add_vertex(self):
         self.num_vertices += 1
         for row in self.adj_matrix:
-            row.append(0)  # Dodajemy kolumnę do macierzy sąsiedztwa
-        self.adj_matrix.append([0] * self.num_vertices)  # Dodajemy nowy wiersz
+            row.append(0) 
+        self.adj_matrix.append([0] * self.num_vertices)  
         # Dodajemy pustą listę dla wag
         self.weights_matrix.append([[] for _ in range(self.num_vertices)])
 
@@ -37,8 +37,8 @@ class Graph:
             return
         i -= 1
         j -= 1
-        self.adj_matrix[i][j] += 1  # Dodajemy krawędź
-        self.weights_matrix[i][j].append(weight)  # Dodajemy wagę krawędzi
+        self.adj_matrix[i][j] += 1  
+        self.weights_matrix[i][j].append(weight) 
         if not self.directed:
             self.adj_matrix[j][i] += 1
             self.weights_matrix[j][i].append(weight)
@@ -52,13 +52,13 @@ class Graph:
         if self.adj_matrix[i][j] == 0:
             print("Krawędź nie istnieje.")
             return
-        if weight is None:  # Usuń jedną krawędź
+        if weight is None: 
             self.adj_matrix[i][j] -= 1
             self.weights_matrix[i][j].pop()
             if not self.directed:
                 self.adj_matrix[j][i] -= 1
                 self.weights_matrix[j][i].pop()
-        else:  # Usuń krawędź o określonej wadze
+        else: 
             if weight in self.weights_matrix[i][j]:
                 self.weights_matrix[i][j].remove(weight)
                 self.adj_matrix[i][j] -= 1
@@ -122,15 +122,11 @@ class Graph:
 
     def draw_graph(self, filename):
         plt.clf()
-
-        # Use MultiGraph or MultiDiGraph to handle multiple edges
         G = nx.MultiDiGraph() if self.directed else nx.MultiGraph()
         size = len(self.adj_matrix)
 
         for i in range(size):
             G.add_node(i + 1)
-
-        # Add edges with their respective weights
         for i in range(size):
             for j in range(size):
                 k = self.adj_matrix[i][j]
@@ -140,35 +136,26 @@ class Graph:
                         G.add_edge(i + 1, j + 1, weight=weight, key=edge_idx)
 
         pos = nx.spring_layout(G)
-
-        # Draw nodes only (skip edges for now)
         nx.draw_networkx_nodes(G, pos, node_color='lightblue', node_size=2000)
         nx.draw_networkx_labels(G, pos, font_weight='bold')
-
-        # Extract edge weights
         edge_labels = {}
         for u, v, key, data in G.edges(data=True, keys=True):
             edge_labels[(u, v, key)] = data['weight']
-
-        # Draw multi-edges manually
         ax = plt.gca()
         for (u, v, key), label in edge_labels.items():
             x0, y0 = pos[u]
             x1, y1 = pos[v]
             if u == v:
-                # Self-loop: draw as a circle
                 loop = FancyArrowPatch((x0, y0), (x0 + 0.1, y0 + 0.1),
                                        connectionstyle=f"arc3,rad={0.3 + 0.1 * key}",
                                        arrowstyle='-', color='black')
                 ax.add_patch(loop)
                 plt.text(x0 + 0.15, y0 + 0.15, str(label), fontsize=10, color='black')
             else:
-                # Multi-edge: draw arcs with different curvature
                 arc = FancyArrowPatch((x0, y0), (x1, y1),
                                       connectionstyle=f"arc3,rad={0.2 * (key - len(G[u][v]) // 2)}",
                                       arrowstyle='-', color='black')
                 ax.add_patch(arc)
-                # Add label at an offset midpoint
                 mid_x = (x0 + x1) / 2 + 0.1 * key
                 mid_y = (y0 + y1) / 2 + 0.1 * key
                 plt.text(mid_x, mid_y, str(label), fontsize=10, ha='center', color='black')
@@ -292,30 +279,10 @@ class Graph:
                         self.add_edge(start, end, weight=weight)
                         print(f"Dodano krawędź: {start} -> {end} o wadze {weight}")
         G_E = self.to_networkx()
-        # Rysowanie grafu po dodaniu nowych krawędzi
         plt.clf()
         self.draw_graph("augmented_graph")
         print("Zapisano graf z dodatkowymi krawędziami do pliku augmented_graph.png")
-
-        # self.display_matrices()
-        return self.adj_matrix
-        # if nx.is_eulerian(G_E):
-        #     # Znajdź cykl Eulera w grafie G_E
-        #     eulerian_cycle = list(nx.eulerian_circuit(G_E))
-        #     print("Cykl Eulera:", eulerian_cycle)
-        #     # Rysowanie cyklu Eulera
-        #     plt.clf()
-        #     pos = nx.spring_layout(G_E)
-        #     nx.draw(G_E, pos, with_labels=True, node_color='lightblue', font_weight='bold', node_size=2000)
-        #     edge_labels = nx.get_edge_attributes(G_E, 'weight')
-        #     nx.draw_networkx_edge_labels(G_E, pos, edge_labels=edge_labels)
-        #     # Zaznaczenie krawędzi w cyklu Eulera
-        #     cycle_edges = [(u, v) for u, v in eulerian_cycle]
-        #     nx.draw_networkx_edges(G_E, pos, edgelist=cycle_edges, edge_color='green', width=2.5)
-        #     plt.savefig("eulerian_cycle.png")
-        #     print("Cykl Eulera zapisano do pliku eulerian_cycle.png")
-        # else:
-        #     print("Graf G_E nie jest eulerowski, cykl Eulera nie istnieje.")
+        return self.adj_matrix, self.weights_matrix
 
     def to_networkx(self):
         G = nx.Graph()
@@ -327,50 +294,44 @@ class Graph:
         return G
 
 
-# Example usage
+
 g = Graph()
 g.load_from_file("file.txt")
 g.draw_graph("basegraph")
-adjMatrix = g.chineese_postman()
-
-# G = nx.Graph()
-# for i in range(len(adjMatrix)):
-#     for j in range(i, len(adjMatrix)):
-#         for _ in range(adjMatrix[i][j]):
-#             G.add_edge(i, j)
-# if nx.is_eulerian(G):
-#     euler_cycle = list(nx.eulerian_circuit(G))
-#     print(euler_cycle)
-# else:
-#     print("Graf nie ma cyklu Eulera")
+adjMatrix, wMatrix = g.chineese_postman()
 
 
 def find_eulerian_cycle(graph):
-    # Tworzymy graf skierowany
-    G = nx.MultiGraph()  # MultiGraph obsługuje krawędzie wielokrotne
-
-    # Dodajemy krawędzie do grafu z uwzględnieniem liczby krawędzi
+    G = nx.MultiGraph()
     for i in range(len(graph)):
-        for j in range(i + 1, len(graph)):  # Unikamy dodawania tych samych krawędzi dwukrotnie
+        for j in range(i + 1, len(graph)):
             if graph[i][j] > 0:
-                for _ in range(graph[i][j]):  # Dodajemy wielokrotne krawędzie
+                for _ in range(graph[i][j]):
                     G.add_edge(i, j)
 
-    # Sprawdzamy, czy graf ma cykl Eulera
     if nx.is_eulerian(G):
-        # Znajdujemy cykl Eulera
         cycle = list(nx.eulerian_circuit(G))
-        # Zwiększamy o 1 numery wierzchołków w cyklu
-
         return cycle
     else:
         return None
 
 cycle = find_eulerian_cycle(adjMatrix)
+print("Cykl listonosza:")
 if cycle:
     for u, v in cycle:
         print(f"({u+1}, {v+1})", end=" ")
     print()
-    # print("Cykl Eulera:", cycle)
 else:
     print("Graf nie ma cyklu Eulera")
+
+
+sumw= 0
+for i, j in cycle:
+    sumw += wMatrix[i][j][0]
+    
+print(f"Długość trasy: {sumw}")
+
+
+
+
+    
