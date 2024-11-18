@@ -1,5 +1,6 @@
 import networkx as nx
 import matplotlib.pyplot as plt
+from matplotlib.patches import FancyArrowPatch
 
 class Graph:
     def __init__(self, directed=False):
@@ -120,13 +121,13 @@ class Graph:
 
     def draw_graph(self, filename):
         plt.clf()
-        
+
         # Use MultiGraph or MultiDiGraph to handle multiple edges
         G = nx.MultiDiGraph() if self.directed else nx.MultiGraph()
         size = len(self.adj_matrix)
 
         for i in range(size):
-            G.add_node(i+1)
+            G.add_node(i + 1)
 
         # Add edges with their respective weights
         for i in range(size):
@@ -135,23 +136,41 @@ class Graph:
                 if k > 0:
                     for edge_idx in range(k):
                         weight = self.weights_matrix[i][j][edge_idx]
-                        G.add_edge(i+1, j+1, weight=weight)
+                        G.add_edge(i + 1, j + 1, weight=weight, key=edge_idx)
 
         pos = nx.spring_layout(G)
-        
-        # Manually extract edge weights and associate them with the edge keys
+
+        # Draw nodes only (skip edges for now)
+        nx.draw_networkx_nodes(G, pos, node_color='lightblue', node_size=2000)
+        nx.draw_networkx_labels(G, pos, font_weight='bold')
+
+        # Extract edge weights
         edge_labels = {}
         for u, v, key, data in G.edges(data=True, keys=True):
             edge_labels[(u, v, key)] = data['weight']
 
-        # Draw the graph (nodes and edges)
-        nx.draw(G, pos, with_labels=True, node_color='lightblue', font_weight='bold', node_size=2000)
-
-        # Manually draw the edge labels for multi-edges
+        # Draw multi-edges manually
+        ax = plt.gca()
         for (u, v, key), label in edge_labels.items():
-            x = (pos[u][0] + pos[v][0]) / 2
-            y = (pos[u][1] + pos[v][1]) / 2
-            plt.text(x, y, str(label), fontsize=12, ha='center', color='black')
+            x0, y0 = pos[u]
+            x1, y1 = pos[v]
+            if u == v:
+                # Self-loop: draw as a circle
+                loop = FancyArrowPatch((x0, y0), (x0 + 0.1, y0 + 0.1),
+                                       connectionstyle=f"arc3,rad={0.3 + 0.1 * key}",
+                                       arrowstyle='-', color='black')
+                ax.add_patch(loop)
+                plt.text(x0 + 0.15, y0 + 0.15, str(label), fontsize=10, color='black')
+            else:
+                # Multi-edge: draw arcs with different curvature
+                arc = FancyArrowPatch((x0, y0), (x1, y1),
+                                      connectionstyle=f"arc3,rad={0.2 * (key - len(G[u][v]) // 2)}",
+                                      arrowstyle='-', color='black')
+                ax.add_patch(arc)
+                # Add label at an offset midpoint
+                mid_x = (x0 + x1) / 2 + 0.1 * key
+                mid_y = (y0 + y1) / 2 + 0.1 * key
+                plt.text(mid_x, mid_y, str(label), fontsize=10, ha='center', color='black')
 
         plt.savefig(f"{filename}.png")
 
@@ -177,9 +196,135 @@ class Graph:
             print("Plik nie został znaleziony.")
         except ValueError as ve:
             print(f"Błąd w danych: {ve}")
+    def perfect_matching(self):
+        # Upewnij się, że liczba wierzchołków w pełnym grafie jest parzysta
+        if self.num_vertices % 2 != 0:
+            print("Nie można znaleźć dokładnego skojarzenia, ponieważ liczba wierzchołków jest nieparzysta.")
+            return None
+
+        # Używamy NetworkX do znalezienia maksymalnego skojarzenia wagowego
+        matching = nx.max_weight_matching(self.to_networkx(), maxcardinality=True, weight='weight')
+
+        # Sprawdzamy, czy skojarzenie jest dokładne
+        if len(matching) == self.num_vertices // 2:
+            print(f"Znaleziono dokładne skojarzenie: {matching}")
+        else:
+            print("Nie znaleziono dokładnego skojarzenia.")
+            return None
+
+        return matching
+    def chineese_postman(self):
+        # Zidentyfikuj wierszchołki nieparzystego stopnia w grafie G.
+        W = []
+        for v in range(self.num_vertices):
+            if not self.directed:
+                if self.vertex_degree(v+1) % 2 != 0:
+                    W.append(v+1)
+        print(f"Wierszchołki o nieparzystym stopniu to: {W}")
+
+        # Skonstruuj pełny graf na podstawie wierzchołków W
+        # oraz najkrótszych ścieżek między nimi w grafie G
+        G_full = nx.Graph()
+
+
+        for vertex in W:
+            G_full.add_node(vertex)
+
+        shortest_paths_list = [] # u, v, shortest_path
+        for i in range(len(W)):
+            for j in range(i + 1, len(W)):
+                u, v = W[i], W[j]
+                shortest_path = nx.shortest_path(self.to_networkx(), source=u, target=v, weight='weight')
+                shortest_path_length = nx.shortest_path_length(self.to_networkx(), source=u, target=v, weight='weight')
+                shortest_paths_list.append((u, v, shortest_path))
+                G_full.add_edge(u, v, weight=shortest_path_length)
+
+
+        plt.clf()
+        pos = nx.spring_layout(G_full)
+        nx.draw(G_full, pos, with_labels=True, node_color='lightblue', font_weight='bold', node_size=2000)
+        edge_labels = nx.get_edge_attributes(G_full, 'weight')
+        nx.draw_networkx_edge_labels(G_full, pos, edge_labels=edge_labels)
+        plt.savefig("g_full")
+
+        print("Zapisano pełny graf z wierszchołków o nieparzystym stopniu do pliku g_full.png")
+
+
+        # Znajdź minimalne skojarzenie dokładne M w grafie G'
+        matching = nx.algorithms.matching.min_weight_matching(G_full, weight='weight')
+        print(f"Minimalne dokładne skojarzenie: {matching}")
+        plt.clf()
+        pos = nx.spring_layout(G_full)
+        nx.draw(
+            G_full, pos, with_labels=True, node_color='lightblue', font_weight='bold', node_size=2000
+        )
+        edge_labels = nx.get_edge_attributes(G_full, 'weight')
+        nx.draw_networkx_edge_labels(G_full, pos, edge_labels=edge_labels)
+        matching_edges = list(matching)
+        nx.draw_networkx_edges(
+            G_full, pos, edgelist=matching_edges, edge_color='purple', width=2.5
+        )
+        plt.savefig("g_full_matching.png")
+
+        # Dla każdej krawędzi e z M dodaj krawędzie w grafie G, 
+        # które odpowiadają najkrótszej ścieżce opdpowiadającej e
+
+        for u, v in matching:
+            for element in shortest_paths_list:
+                if (element[0] == u and element[1] == v) or (element[0] == v and element[1] == u):
+                    shortest_path = element[2]
+                    print(f"Dodawanie krawędzi dla najkrótszej ścieżki {shortest_path} odpowiadającej {u}-{v}")
+                    for i in range(len(shortest_path) - 1):
+                        start = shortest_path[i]
+                        end = shortest_path[i + 1]
+                        weight = self.to_networkx().edges[start, end]['weight']
+                        self.add_edge(start, end, weight=weight)
+                        print(f"Dodano krawędź: {start} -> {end} o wadze {weight}")
+        G_E = self.to_networkx()
+        # Rysowanie grafu po dodaniu nowych krawędzi
+        plt.clf()
+        self.draw_graph("augmented_graph")
+        print("Zapisano graf z dodatkowymi krawędziami do pliku augmented_graph.png")
+
+        if nx.is_eulerian(G_E):
+            # Znajdź cykl Eulera w grafie G_E
+            eulerian_cycle = list(nx.eulerian_circuit(G_E))
+            print("Cykl Eulera:", eulerian_cycle)
+            # Rysowanie cyklu Eulera
+            plt.clf()
+            pos = nx.spring_layout(G_E)
+            nx.draw(G_E, pos, with_labels=True, node_color='lightblue', font_weight='bold', node_size=2000)
+            edge_labels = nx.get_edge_attributes(G_E, 'weight')
+            nx.draw_networkx_edge_labels(G_E, pos, edge_labels=edge_labels)
+            # Zaznaczenie krawędzi w cyklu Eulera
+            cycle_edges = [(u, v) for u, v in eulerian_cycle]
+            nx.draw_networkx_edges(G_E, pos, edgelist=cycle_edges, edge_color='green', width=2.5)
+            plt.savefig("eulerian_cycle.png")
+            print("Cykl Eulera zapisano do pliku eulerian_cycle.png")
+        else:
+            print("Graf G_E nie jest eulerowski, cykl Eulera nie istnieje.")
+
+
+
+
+
+
+
+
+        
+
+    def to_networkx(self):
+        G = nx.Graph()
+        for i in range(self.num_vertices):
+            for j in range(self.num_vertices):
+                if self.adj_matrix[i][j] > 0:
+                    weight = self.weights_matrix[i][j][0]
+                    G.add_edge(i+1, j+1, weight=weight)
+        return G
 
 
 # Example usage
 g = Graph()
 g.load_from_file("file.txt")
 g.draw_graph("basegraph")
+g_full=g.chineese_postman()
