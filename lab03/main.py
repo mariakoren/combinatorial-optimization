@@ -193,24 +193,6 @@ class Graph:
         for row in self.weights_matrix:
             print(["; ".join(map(str, cell)) if cell else "[]" for cell in row])
 
-
-    def perfect_matching(self):
-        # Upewnij się, że liczba wierzchołków w pełnym grafie jest parzysta
-        if self.num_vertices % 2 != 0:
-            print("Nie można znaleźć dokładnego skojarzenia, ponieważ liczba wierzchołków jest nieparzysta.")
-            return None
-
-        # Używamy NetworkX do znalezienia maksymalnego skojarzenia wagowego
-        matching = nx.max_weight_matching(self.to_networkx(), maxcardinality=True, weight='weight')
-
-        # Sprawdzamy, czy skojarzenie jest dokładne
-        if len(matching) == self.num_vertices // 2:
-            print(f"Znaleziono dokładne skojarzenie: {matching}")
-        else:
-            print("Nie znaleziono dokładnego skojarzenia.")
-            return None
-
-        return matching
     def chineese_postman(self):
         # Zidentyfikuj wierszchołki nieparzystego stopnia w grafie G.
         W = []

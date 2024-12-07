@@ -62,7 +62,7 @@ def christofides(graph):
     subgraph = graph.subgraph(odd_degree_nodes)
     matching = nx.max_weight_matching(subgraph, maxcardinality=True, weight='weight')
 
-    print("Krok 5: Połączenie MST i parowania")
+    print("Krok 5: Połączenie MST i skojarzeń")
     eulerian_graph = nx.MultiGraph(mst)
     for u, v in matching:
         eulerian_graph.add_edge(u, v, weight=subgraph[u][v]['weight'])
@@ -99,7 +99,14 @@ mst, odd_degree_nodes, matching, eulerian_cycle = christofides(graph.graph)
 if eulerian_cycle:
     print(f"Cykl Eulera: {eulerian_cycle}")
 
+hamilton = []
+for i in range(len(eulerian_cycle)):
+    element = eulerian_cycle[i][0]
+    if element not in hamilton:
+        hamilton.append(element)
 
+hamilton.append(hamilton[0])
 
+print(f"Cykl Hamiltona: {hamilton}")
 
 draw_graph(graph.graph, mst=mst, matching=matching, odd_degree_nodes=odd_degree_nodes)
