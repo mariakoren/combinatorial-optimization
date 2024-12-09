@@ -32,7 +32,7 @@ class CriticalPathMethod:
             self.edge_task_mapping[(start, end)] = f"z{len(G.edges)}"
         pos = nx.spring_layout(G)
         edge_labels = {edge: f"{G.edges[edge]['task']} ({G.edges[edge]['duration']})" for edge in G.edges}
-        self.draw_graph(G, edge_labels, pos, "Graf wejściowy", "graf_wejsciowy.png", node_color="purple")
+        self.draw_graph(G, edge_labels, pos, "Graf wejściowy", "graf_wejsciowy.png", node_color="#9932CC")
 
     def topological_sort(self):
         in_degree = defaultdict(int)
@@ -61,7 +61,7 @@ class CriticalPathMethod:
             G_t.add_edge(mapped_start, mapped_end, task=self.edge_task_mapping[(start, end)], duration=duration)
         pos_t = nx.spring_layout(G_t)
         edge_labels_topo = {edge: f"{G_t.edges[edge]['task']} ({G_t.edges[edge]['duration']})" for edge in G_t.edges}
-        self.draw_graph(G_t, edge_labels_topo, pos_t, "Graf topologiczny", "graf_topologiczny.png", node_color="lavender")
+        self.draw_graph(G_t, edge_labels_topo, pos_t, "Graf topologiczny", "graf_topologiczny.png", node_color="#9370DB")
 
 
         new_graph = defaultdict(list)
@@ -99,7 +99,14 @@ class CriticalPathMethod:
             for neighbor in self.graph_mapping[node]:
                 self.ES[neighbor] = max(self.ES[neighbor], self.ES[node] + self.weights_mapping[(node, neighbor)])
 
+        cmax = 0
+        for task in self.ES.items():
+            if task[1] > cmax:
+                cmax = task[1]
+       
+        
         print("Earliest Start Times (ES):", self.ES)
+        print("Długość uszeregowania (według ES) wynosi: ", cmax)
 
 
     def calculate_LS(self):
@@ -131,7 +138,19 @@ class CriticalPathMethod:
         plt.figure(figsize=(12, 8))
         machine_usage = defaultdict(list)
         task_colors = {}
-        available_colors = list(mcolors.TABLEAU_COLORS.values())
+        # available_colors = list(mcolors.TABLEAU_COLORS.values())
+        available_colors = [
+            "#8A2BE2",  
+            "#BA55D3",  
+            "#4B0082", 
+            "#6A5ACD",  
+            "#9932CC",  
+            "#7B68EE",  
+            "#9370DB", 
+            "#9400D3",  
+            "#6495ED",  
+            "#8B008B",  
+        ]
 
         for i, (start, end) in enumerate(self.weights_mapping):
             task_colors[(start, end)] = available_colors[i % len(available_colors)]
@@ -181,14 +200,32 @@ class CriticalPathMethod:
         self.find_critical_path()
         self.draw_gantt_chart()
 
+# tasks = [
+#     ("w1", "w2", 4),
+#     ("w1", "w3", 2),
+#     ("w2", "w4", 4),
+#     ("w3", "w4", 6)
+# ]
 
-# Example tasks
+# tasks = [
+#     ('w2', 'w4', 2),
+#     ('w2', 'w1', 3),
+#     ('w1', 'w3', 2),
+#     ('w4', 'w3', 1),
+#     ('w3', 'w5', 4),
+# ]
+
 tasks = [
-    ("w1", "w2", 4),
-    ("w1", "w3", 2),
-    ("w2", "w4", 4),
-    ("w3", "w4", 6)
+    ("w2", "w1", 3),
+    ("w1", "w3", 4),
+    ("w2", "w3", 2),
+    ("w1", "w4", 1),
+    ("w3", "w4", 2),
+    ("w3", "w5", 3),
+    ("w4", "w6", 2),
+    ("w5", "w6", 4)
 ]
+
 
 cpm = CriticalPathMethod(tasks)
 cpm.execute()
