@@ -200,12 +200,12 @@ class CriticalPathMethod:
         self.find_critical_path()
         self.draw_gantt_chart()
 
-# tasks = [
-#     ("w1", "w2", 4),
-#     ("w1", "w3", 2),
-#     ("w2", "w4", 4),
-#     ("w3", "w4", 6)
-# ]
+tasks = [
+    ("w1", "w2", 4),
+    ("w1", "w3", 2),
+    ("w2", "w4", 4),
+    ("w3", "w4", 6)
+]
 
 # tasks = [
 #     ('w2', 'w4', 2),
@@ -215,16 +215,16 @@ class CriticalPathMethod:
 #     ('w3', 'w5', 4),
 # ]
 
-tasks = [
-    ("w2", "w1", 3),
-    ("w1", "w3", 4),
-    ("w2", "w3", 2),
-    ("w1", "w4", 1),
-    ("w3", "w4", 2),
-    ("w3", "w5", 3),
-    ("w4", "w6", 2),
-    ("w5", "w6", 4)
-]
+# tasks = [
+#     ("w2", "w1", 3),
+#     ("w1", "w3", 4),
+#     ("w2", "w3", 2),
+#     ("w1", "w4", 1),
+#     ("w3", "w4", 2),
+#     ("w3", "w5", 3),
+#     ("w4", "w6", 2),
+#     ("w5", "w6", 4)
+# ]
 
 
 cpm = CriticalPathMethod(tasks)
